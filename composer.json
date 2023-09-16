@@ -1,0 +1,28 @@
+{
+    "name": "ajamaa/laravel-installer",
+    "description": "Laravel package to install your website",
+    "type": "package",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Abderrahim Ajamaa",
+            "email": "ajama3abdo32@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.1"
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "Ajamaa\\LaravelInstaller\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Ajamaa\\LaravelInstaller\\Providers\\AjamaaServiceProvider"
+            ]
+        }
+    }
+}

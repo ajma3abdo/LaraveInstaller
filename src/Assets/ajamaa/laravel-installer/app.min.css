@@ -1,0 +1,39 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+
+body{
+    background: rgb(235, 168, 0);
+    font-family: "Tajawal";
+    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 100vh;
+    direction: rtl;
+}
+
+.main{
+    width: 50%;
+    padding: 20px;
+    background-color: #FFF;
+    border-radius: 5px;
+    box-shadow: 0 0 4px #00000039;
+}
+
+.heading{
+    padding: 20px;
+}
+
+ul{
+    padding: 0;
+    margin: 0;
+}
+
+textarea {
+    min-height: 500px!important;
+    resize: none;
+    direction: ltr;
+}
