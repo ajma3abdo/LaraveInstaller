@@ -5,11 +5,19 @@ namespace Ajamaa\LaravelInstaller\Helpers;
 
 class Permissions
 {
-    public static function check()
+    public static function check(): bool
     {
         foreach (config('installer.permissions') as $folder => $permission) {
-            $current_permission = substr(sprintf('%o', fileperms(base_path($folder))), -4);
-            if (!($current_permission >= $permission)) {
+            $path = base_path($folder);
+
+            if (!file_exists($path)) {
+                return false;
+            }
+
+            $current = octdec(substr(sprintf('%o', fileperms($path)), -4));
+            $required = octdec($permission);
+
+            if ($current < $required) {
                 return false;
             }
         }

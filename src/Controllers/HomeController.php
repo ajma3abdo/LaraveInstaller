@@ -11,8 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\URL;
 
 class HomeController
 {
@@ -32,37 +30,26 @@ class HomeController
         }
 
         if ($request->isMethod('post')) {
-            $request->validate([
-                'key' => 'required'
-            ], [], ['key' => "مفتاح الترخيص"]);
+            $messages = __('laravel_installer.validation');
+            $request->validate(
+                ['key' => 'required'],
+                is_array($messages) ? $messages : [],
+                ['key' => __('laravel_installer.licence.form.label')]
+            );
 
-            $url = config('installer.licence.url_check');
-            $key = $request->key;
-            $domain = parse_url(URL::full(), PHP_URL_HOST);
+            $result = LicenceKey::verify($request->key);
 
-            $response = Http::post("$url/check/$domain/$key");
-
-            $data = $response->json();
-
-            if (is_array($data)) {
-                if (isset($data['status'])) {
-                    if ($data['status']) {
-                        try {
-                            $file = fopen(storage_path("licence"), "a+");
-                            fwrite($file, $key);
-                            fclose($file);
-                        } catch (\Exception $e) {
-                            //dd($e->getMessage());
-                        }
-
-                        return to_route('install::permissions');
-                    } else {
-                        return to_route('install::licence')->with('error', $data['message']);
-                    }
+            if ($result['status']) {
+                try {
+                    file_put_contents(storage_path('licence'), $request->key);
+                } catch (\Exception $e) {
+                    return to_route('install::licence')->with('error', 'تعذّر حفظ مفتاح الترخيص: ' . $e->getMessage());
                 }
+
+                return to_route('install::permissions');
             }
 
-            return to_route('install::licence')->with('error', "Error");
+            return to_route('install::licence')->with('error', $result['message']);
         }
 
         return view('vendor.ajamaa.laravel-installer.licence');
@@ -79,25 +66,31 @@ class HomeController
         $permissions = [];
 
         foreach (config('installer.permissions') as $folder => $permission) {
-            $current_permission = substr(sprintf('%o', fileperms(base_path($folder))), -4);
-            if (!($current_permission >= $permission)) {
+            $path = base_path($folder);
 
+            if (!file_exists($path)) {
                 array_push($permissions, [
-                    'folder' => $folder,
-                    'permission' => $permission,
-                    'current_permission' => $current_permission,
-                    'isSet' => false,
+                    'folder'             => $folder,
+                    'permission'         => $permission,
+                    'current_permission' => __('laravel_installer.permissions.not_found'),
+                    'isSet'              => false,
                 ]);
-
                 $error = true;
-            } else {
+                continue;
+            }
 
-                array_push($permissions, [
-                    'folder' => $folder,
-                    'permission' => $permission,
-                    'current_permission' => $current_permission,
-                    'isSet' => true,
-                ]);
+            $current_permission = substr(sprintf('%o', fileperms($path)), -4);
+            $isSet = octdec($current_permission) >= octdec($permission);
+
+            array_push($permissions, [
+                'folder'             => $folder,
+                'permission'         => $permission,
+                'current_permission' => $current_permission,
+                'isSet'              => $isSet,
+            ]);
+
+            if (!$isSet) {
+                $error = true;
             }
         }
 
@@ -224,18 +217,30 @@ class HomeController
             return to_route('install::requirements')->with('error', __('laravel_installer.errors.requirements'));
         }
 
-        try {
-            DB::getPdo();
+        // Guard: don't re-run migrate:fresh if already done this session.
+        // Without this, navigating back and reloading would wipe the database again.
+        if (!session()->has('installer_db_done')) {
+            try {
+                DB::purge();
+                DB::reconnect();
+                DB::getPdo();
 
-            Artisan::call('migrate:fresh', [
-                '--seed' => true,
-                '--force' => true
-            ]);
-        } catch (\Exception $e) {
-            return to_route('install::environment')->with('error', $e->getMessage());
+                $exitCode = Artisan::call('migrate:fresh', [
+                    '--seed'  => true,
+                    '--force' => true,
+                ]);
+
+                if ($exitCode !== 0) {
+                    $output = trim(Artisan::output());
+                    return to_route('install::database')->with('error', $output ?: __('laravel_installer.errors.database'));
+                }
+            } catch (\Throwable $e) {
+                return to_route('install::environment')->with('error', $e->getMessage());
+            }
+
+            session()->put('installer_db_done', true);
+            session()->flash('success', 'تم تنصيب قاعدة البيانات بنجاح');
         }
-
-        session()->flash("success", "تم تنصيب قاعدة البيانات بنجاح");
 
         return view('vendor.ajamaa.laravel-installer.database');
     }
@@ -264,19 +269,29 @@ class HomeController
         }
 
         if ($request->isMethod('post')) {
-            $rules = [];
-            $user = [];
+            $rules      = [];
+            $user       = [];
+            $attributes = [];
 
             foreach (config('installer.admin.form') as $name => $value) {
                 $rules[$name] = $value['rules'];
+                $user[$name]  = $request->$name;
 
-                $user[$name] = $request->$name;
+                $label = __("laravel_installer.admin.form.{$name}");
+                $attributes[$name] = is_string($label) ? $label : $name;
             }
 
-            $request->validate($rules);
+            $messages = __('laravel_installer.validation');
+
+            $request->validate($rules, is_array($messages) ? $messages : [], $attributes);
 
             $u = User::create($user);
-            $u->AssignRole('Admin');
+
+            try {
+                $u->AssignRole('Admin');
+            } catch (\Throwable $e) {
+                // Role assignment is optional — skip if not available
+            }
 
             Auth::login($u);
 

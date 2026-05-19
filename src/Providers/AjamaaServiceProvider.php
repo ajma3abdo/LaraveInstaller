@@ -8,6 +8,12 @@ class AjamaaServiceProvider extends ServiceProvider
 {
 
 
+    public function boot()
+    {
+        $this->loadTranslationsFrom(__DIR__ . '/../Lang', 'laravel_installer');
+        $this->loadViewsFrom(__DIR__ . '/../Views', 'ajamaa.laravel-installer');
+    }
+
     /**
      * Register the service provider.
      *

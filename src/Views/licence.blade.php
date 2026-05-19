@@ -2,29 +2,38 @@
 
 @section('title', __('laravel_installer.licence.title'))
 
-@section('content')    
-    <form method="post" action="{{route('install::licence')}}">
+@section('content')
+<div class="install-card">
+    <form method="post" action="{{ route('install::licence') }}">
         @if ($errors->any())
-            <div class="alert alert-danger" role="alert">
-                {{$errors->first()}}
-            </div>
+            <div class="alert alert-danger">{{ $errors->first() }}</div>
         @endif
         @if (session()->has('error'))
-            <div class="alert alert-danger" role="alert">
-                {{session('error')}}
-            </div>
+            <div class="alert alert-danger">{{ session('error') }}</div>
         @endif
+
         @csrf
         @method('POST')
-        <div class="mt-4 mb-4">
-            <label for="exampleInputEmail1" class="form-label">
-                {{__('laravel_installer.licence.form.label')}}
-            </label>
-            <input type="text" placeholder="ABCD-EFGH-IJKL-MNOP" class="form-control" name="key" />
-        </div>
-        <div class="d-flex justify-content-center">
 
-            <button type="submit" class="btn btn-primary">{{__('laravel_installer.licence.next')}}</button>
+        <div class="mb-4">
+            <label class="form-label">{{ __('laravel_installer.licence.form.label') }}</label>
+            <input type="text"
+                   placeholder="ABCD-EFGH-IJKL-MNOP"
+                   class="form-control"
+                   name="key"
+                   autocomplete="off"
+                   style="letter-spacing: 0.08em; font-family: monospace; font-size: 1rem !important;" />
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <a class="btn-back" href="{{ route('install::index') }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                رجوع
+            </a>
+            <button type="submit" class="btn btn-primary">
+                {{ __('laravel_installer.licence.next') }}
+            </button>
         </div>
     </form>
+</div>
 @endsection

@@ -15,16 +15,24 @@ class LaravelInstallerMiddleware
      */
     public function handle($request, Closure $next)
     {
-        app()->setLocale(config('installer.default_language'));
-        if (!$this->isInstalled()) {
+        $isInstallRoute = $request->is('install') || $request->is('install/*');
 
-            if ("install" != $request->route()->getPrefix()) {
-                return redirect()->route("install::index");
+        // Set locale for all installer pages
+        if ($isInstallRoute) {
+            app()->setLocale(config('installer.default_language'));
+        }
+
+        if (!$this->isInstalled()) {
+            // Redirect non-install routes to the installer
+            if (!$isInstallRoute) {
+                return redirect()->route('install::index');
             }
         } else {
-            if ("install" == $request->route()->getPrefix()) {
+            // Once installed, block access to the installer
+            if ($isInstallRoute) {
                 abort(404);
             }
+            app()->setLocale(config('installer.default_language'));
         }
 
         return $next($request);

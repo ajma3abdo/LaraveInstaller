@@ -41,8 +41,8 @@ return [
     */
 
     'licence' => [
-        'enable' => true,
-        'url_check' => "https://keysmanager.test",
+        'enable' => false,
+        'url_check' => "",
     ],
 
     /*
