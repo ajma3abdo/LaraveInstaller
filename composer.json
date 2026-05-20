@@ -1,6 +1,7 @@
 {
     "name": "ajamaa/laravel-installer",
     "description": "Laravel package to install your website",
+    "version": "1.1.0",
     "type": "package",
     "license": "MIT",
     "authors": [
